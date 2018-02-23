@@ -1,212 +1,286 @@
-/* global describe, it, expect, before */
-/* jshint expr: true */
-
 var chai = require('chai')
-  , FacebookStrategy = require('../lib/strategy');
+	, TwitterStrategy = require('../lib/strategy');
 
 
-describe('Strategy', function() {
-    
-  describe('constructed', function() {
-    var strategy = new FacebookStrategy({
-        clientID: 'ABC123',
-        clientSecret: 'secret'
-      },
-      function() {});
-    
-    it('should be named facebook', function() {
-      expect(strategy.name).to.equal('facebook');
-    });
-  })
-  
-  describe('constructed with undefined options', function() {
-    it('should throw', function() {
-      expect(function() {
-        var strategy = new FacebookStrategy(undefined, function(){});
-      }).to.throw(Error);
-    });
-  })
+describe('Strategy', function () {
 
-  describe('authorization request with display parameter', function() {
-    var strategy = new FacebookStrategy({
-        clientID: 'ABC123',
-        clientSecret: 'secret'
-      }, function() {});
-    
-    
-    var url;
+	describe('constructed', function () {
+		var strategy = new TwitterStrategy({
+			consumerKey: 'ABC123',
+			consumerSecret: 'secret'
+		}, function () { });
 
-    before(function(done) {
-      chai.passport.use(strategy)
-        .redirect(function(u) {
-          url = u;
-          done();
-        })
-        .req(function(req) {
-        })
-        .authenticate({ display: 'mobile' });
-    });
+		it('should be named twitter', function () {
+			expect(strategy.name).to.equal('twitter');
+		});
+	})
 
-    it('should be redirected', function() {
-      expect(url).to.equal('https://www.facebook.com/dialog/oauth?display=mobile&response_type=code&client_id=ABC123');
-    });
-  });
-  
-  describe('authorization request with reauthorization parameters', function() {
-    var strategy = new FacebookStrategy({
-        clientID: 'ABC123',
-        clientSecret: 'secret'
-      }, function() {});
-    
-    
-    var url;
+	describe('constructed with undefined options', function () {
+		it('should throw', function () {
+			expect(function () {
+				var strategy = new TwitterStrategy(undefined, function () { });
+			}).to.throw(Error);
+		});
+	})
 
-    before(function(done) {
-      chai.passport.use(strategy)
-        .redirect(function(u) {
-          url = u;
-          done();
-        })
-        .req(function(req) {
-        })
-        .authenticate({ authType: 'reauthenticate', authNonce: 'foo123' });
-    });
+	describe('authorization request', function () {
+		var strategy = new TwitterStrategy({
+			consumerKey: 'ABC123',
+			consumerSecret: 'secret'
+		}, function () { });
 
-    it('should be redirected', function() {
-      expect(url).to.equal('https://www.facebook.com/dialog/oauth?auth_type=reauthenticate&auth_nonce=foo123&response_type=code&client_id=ABC123');
-    });
-  });
-  
-  describe('failure caused by user denying request', function() {
-    var strategy = new FacebookStrategy({
-        clientID: 'ABC123',
-        clientSecret: 'secret'
-      }, function() {});
-    
-    
-    var info;
-  
-    before(function(done) {
-      chai.passport.use(strategy)
-        .fail(function(i) {
-          info = i;
-          done();
-        })
-        .req(function(req) {
-          req.query = {};
-          req.query.error = 'access_denied';
-          req.query.error_code = '200';
-          req.query.error_description  = 'Permissions error';
-          req.query.error_reason = 'user_denied';
-        })
-        .authenticate();
-    });
-  
-    it('should fail with info', function() {
-      expect(info).to.not.be.undefined;
-      expect(info.message).to.equal('Permissions error');
-    });
-  });
-  
-  describe('error caused by app being in sandbox mode', function() {
-    var strategy = new FacebookStrategy({
-        clientID: 'ABC123',
-        clientSecret: 'secret'
-      }, function() {});
-    
-    
-    var err;
-  
-    before(function(done) {
-      chai.passport.use(strategy)
-        .error(function(e) {
-          err = e;
-          done();
-        })
-        .req(function(req) {
-          req.query = {};
-          req.query.error_code = '901';
-          req.query.error_message = 'This app is in sandbox mode.  Edit the app configuration at http://developers.facebook.com/apps to make the app publicly visible.';
-        })
-        .authenticate();
-    });
-  
-    it('should error', function() {
-      expect(err.constructor.name).to.equal('FacebookAuthorizationError');
-      expect(err.message).to.equal('This app is in sandbox mode.  Edit the app configuration at http://developers.facebook.com/apps to make the app publicly visible.');
-      expect(err.code).to.equal(901);
-      expect(err.status).to.equal(500);
-    });
-  });
-  
-  describe('error caused by invalid code sent to token endpoint (note: error format does not conform to OAuth 2.0 specification)', function() {
-    var strategy = new FacebookStrategy({
-        clientID: 'ABC123',
-        clientSecret: 'secret'
-      }, function() {});
-      
-    strategy._oauth2.getOAuthAccessToken = function(code, options, callback) {
-      return callback({ statusCode: 400, data: '{"error":{"message":"Invalid verification code format.","type":"OAuthException","code":100,"fbtrace_id":"XXxx0XXXxx0"}}' });
-    };
-  
-  
-    var err;
+		strategy._oauth.getOAuthRequestToken = function (extraParams, callback) {
+			callback(null, 'hh5s93j4hdidpola', 'hdhd0244k9j7ao03', {});
+		}
 
-    before(function(done) {
-      chai.passport.use(strategy)
-        .error(function(e) {
-          err = e;
-          done();
-        })
-        .req(function(req) {
-          req.query = {};
-          req.query.code = 'SplxlOBeZQQYbYS6WxSbIA+ALT1';
-        })
-        .authenticate();
-    });
 
-    it('should error', function() {
-      expect(err.constructor.name).to.equal('FacebookTokenError');
-      expect(err.message).to.equal('Invalid verification code format.');
-      expect(err.type).to.equal('OAuthException');
-      expect(err.code).to.equal(100);
-      expect(err.subcode).to.be.undefined;
-      expect(err.traceID).to.equal('XXxx0XXXxx0');
-    });
-  }); // error caused by invalid code sent to token endpoint
-  
-  describe('error caused by invalid code sent to token endpoint (note: error format conforms to OAuth 2.0 specification, though this is not the current behavior of the Facebook implementation)', function() {
-    var strategy = new FacebookStrategy({
-        clientID: 'ABC123',
-        clientSecret: 'secret'
-      }, function() {});
+		var url;
 
-    // inject a "mock" oauth2 instance
-    strategy._oauth2.getOAuthAccessToken = function(code, options, callback) {
-      return callback({ statusCode: 400, data: '{"error":"invalid_grant","error_description":"The provided value for the input parameter \'code\' is not valid."} '});
-    };
-  
-  
-    var err;
+		before(function (done) {
+			chai.passport.use(strategy)
+				.redirect(function (u) {
+					url = u;
+					done();
+				})
+				.req(function (req) {
+					req.session = {};
+				})
+				.authenticate();
+		});
 
-    before(function(done) {
-      chai.passport.use(strategy)
-        .error(function(e) {
-          err = e;
-          done();
-        })
-        .req(function(req) {
-          req.query = {};
-          req.query.code = 'SplxlOBeZQQYbYS6WxSbIA+ALT1';
-        })
-        .authenticate();
-    });
+		it('should be redirected', function () {
+			expect(url).to.equal('https://api.twitter.com/oauth/authenticate?oauth_token=hh5s93j4hdidpola');
+		});
+	});
 
-    it('should error', function() {
-      expect(err.constructor.name).to.equal('TokenError');
-      expect(err.message).to.equal('The provided value for the input parameter \'code\' is not valid.');
-      expect(err.code).to.equal('invalid_grant');
-    });
-  }); // error caused by invalid code sent to token endpoint
-  
+	describe('authorization request with parameters', function () {
+		var strategy = new TwitterStrategy({
+			consumerKey: 'ABC123',
+			consumerSecret: 'secret'
+		}, function () { });
+
+		strategy._oauth.getOAuthRequestToken = function (extraParams, callback) {
+			callback(null, 'hh5s93j4hdidpola', 'hdhd0244k9j7ao03', {});
+		}
+
+
+		var url;
+
+		before(function (done) {
+			chai.passport.use(strategy)
+				.redirect(function (u) {
+					url = u;
+					done();
+				})
+				.req(function (req) {
+					req.session = {};
+				})
+				.authenticate({ screenName: 'bob', forceLogin: true });
+		});
+
+		it('should be redirected', function () {
+			expect(url).to.equal('https://api.twitter.com/oauth/authenticate?oauth_token=hh5s93j4hdidpola&force_login=true&screen_name=bob');
+		});
+	});
+
+	describe('failure caused by user denying request', function () {
+		var strategy = new TwitterStrategy({
+			consumerKey: 'ABC123',
+			consumerSecret: 'secret'
+		}, function () { });
+
+
+		var info;
+
+		before(function (done) {
+			chai.passport.use(strategy)
+				.fail(function (i) {
+					info = i;
+					done();
+				})
+				.req(function (req) {
+					req.query = {};
+					req.query.denied = '8L74Y149';
+				})
+				.authenticate();
+		});
+
+		it('should fail', function () {
+			expect(info).to.be.undefined;
+		});
+	});
+
+	describe('error caused by invalid consumer secret sent to request token URL', function () {
+		var strategy = new TwitterStrategy({
+			consumerKey: 'ABC123',
+			consumerSecret: 'invalid-secret',
+			callbackURL: 'http://www.example.test/callback'
+		}, function verify() { });
+
+		strategy._oauth.getOAuthRequestToken = function (params, callback) {
+			callback({ statusCode: 401, data: '{"errors":[{"code":32,"message":"Could not authenticate you."}]}' });
+		}
+
+
+		var err;
+
+		before(function (done) {
+			chai.passport.use(strategy)
+				.error(function (e) {
+					err = e;
+					done();
+				})
+				.req(function (req) {
+					req.session = {};
+				})
+				.authenticate();
+		});
+
+		it('should error', function () {
+			expect(err).to.be.an.instanceOf(Error);
+			expect(err.message).to.equal("Could not authenticate you.");
+		});
+	});
+
+	describe('error caused by invalid consumer secret sent to request token URL, formatted as unexpected JSON', function () {
+		var strategy = new TwitterStrategy({
+			consumerKey: 'ABC123',
+			consumerSecret: 'invalid-secret',
+			callbackURL: 'http://www.example.test/callback'
+		}, function verify() { });
+
+		strategy._oauth.getOAuthRequestToken = function (params, callback) {
+			callback({ statusCode: 401, data: '{"foo":"bar"}' });
+		}
+
+
+		var err;
+
+		before(function (done) {
+			chai.passport.use(strategy)
+				.error(function (e) {
+					err = e;
+					done();
+				})
+				.req(function (req) {
+					req.session = {};
+				})
+				.authenticate();
+		});
+
+		it('should error', function () {
+			expect(err).to.be.an.instanceOf(Error);
+			expect(err.constructor.name).to.equal('InternalOAuthError');
+			expect(err.message).to.equal('Failed to obtain request token');
+		});
+	});
+
+	describe('error caused by invalid callback sent to request token URL', function () {
+		var strategy = new TwitterStrategy({
+			consumerKey: 'ABC123',
+			consumerSecret: 'secret',
+			callbackURL: 'http://www.example.test/invalid-callback'
+		}, function verify() { });
+
+		strategy._oauth.getOAuthRequestToken = function (params, callback) {
+			callback({ statusCode: 401, data: '<?xml version="1.0" encoding="UTF-8"?>\n<hash>\n  <error>This client application\'s callback url has been locked</error>\n  <request>/oauth/request_token</request>\n</hash>\n' });
+		}
+
+
+		var err;
+
+		before(function (done) {
+			chai.passport.use(strategy)
+				.error(function (e) {
+					err = e;
+					done();
+				})
+				.req(function (req) {
+					req.session = {};
+				})
+				.authenticate();
+		});
+
+		it('should error', function () {
+			expect(err).to.be.an.instanceOf(Error);
+			expect(err.message).to.equal("This client application's callback url has been locked");
+		});
+	});
+
+	describe('error caused by invalid request token sent to access token URL', function () {
+		var strategy = new TwitterStrategy({
+			consumerKey: 'ABC123',
+			consumerSecret: 'secret',
+			callbackURL: 'http://www.example.test/callback'
+		}, function verify() { });
+
+		strategy._oauth.getOAuthAccessToken = function (token, tokenSecret, verifier, callback) {
+			callback({ statusCode: 401, data: 'Invalid request token.' });
+		}
+
+
+		var err;
+
+		before(function (done) {
+			chai.passport.use(strategy)
+				.error(function (e) {
+					err = e;
+					done();
+				})
+				.req(function (req) {
+					req.query = {};
+					req.query['oauth_token'] = 'x-hh5s93j4hdidpola';
+					req.query['oauth_verifier'] = 'hfdp7dh39dks9884';
+					req.session = {};
+					req.session['oauth:twitter'] = {};
+					req.session['oauth:twitter']['oauth_token'] = 'x-hh5s93j4hdidpola';
+					req.session['oauth:twitter']['oauth_token_secret'] = 'hdhd0244k9j7ao03';
+				})
+				.authenticate();
+		});
+
+		it('should error', function () {
+			expect(err).to.be.an.instanceOf(Error);
+			expect(err.message).to.equal("Invalid request token.");
+		});
+	});
+
+	describe('error caused by invalid verifier sent to access token URL', function () {
+		var strategy = new TwitterStrategy({
+			consumerKey: 'ABC123',
+			consumerSecret: 'secret',
+			callbackURL: 'http://www.example.test/callback'
+		}, function verify() { });
+
+		strategy._oauth.getOAuthAccessToken = function (token, tokenSecret, verifier, callback) {
+			callback({ statusCode: 401, data: 'Error processing your OAuth request: Invalid oauth_verifier parameter' });
+		}
+
+
+		var err;
+
+		before(function (done) {
+			chai.passport.use(strategy)
+				.error(function (e) {
+					err = e;
+					done();
+				})
+				.req(function (req) {
+					req.query = {};
+					req.query['oauth_token'] = 'hh5s93j4hdidpola';
+					req.query['oauth_verifier'] = 'x-hfdp7dh39dks9884';
+					req.session = {};
+					req.session['oauth:twitter'] = {};
+					req.session['oauth:twitter']['oauth_token'] = 'hh5s93j4hdidpola';
+					req.session['oauth:twitter']['oauth_token_secret'] = 'hdhd0244k9j7ao03';
+				})
+				.authenticate();
+		});
+
+		it('should error', function () {
+			expect(err).to.be.an.instanceOf(Error);
+			expect(err.message).to.equal("Error processing your OAuth request: Invalid oauth_verifier parameter");
+		});
+	});
+
 });
