@@ -3,7 +3,7 @@
 [Passport](http://passportjs.org/) strategy for authenticating with [Twitter](http://www.twitter.com/)
 using the OAuth 2.0 API.
 
-This Strategy was modifed directly from [Jared Hanson's passport-facebook Strategy](https://www.npmjs.com/package/passport-facebook)
+This Strategy was modifed directly from Jared Hanson's [passport-facebook OAuth 2.0 Strategy](https://www.npmjs.com/package/passport-facebook) and [passport-twitter OAuth 1.0a Strategy](https://www.npmjs.com/package/passport-twitter) modules. This project was taken and modified and released to support Twitter OAuth 2.0 pipelines
 
 This module lets you authenticate using Twitter in your Node.js applications.
 By plugging into Passport, Twitter authentication can be easily and
