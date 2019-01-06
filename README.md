@@ -1,5 +1,7 @@
 # passport-twitter-oauth2
 
+## This is an experiment, and will not work until Twitter supports Oauth2 for login
+
 [Passport](http://passportjs.org/) strategy for authenticating with [Twitter](http://www.twitter.com/)
 using the OAuth 2.0 API.
 
