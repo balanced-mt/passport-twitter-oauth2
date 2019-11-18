@@ -1,5 +1,7 @@
 # passport-twitter-oauth2
 
+# THIS PLUGIN DOES NOT WORK! This was an experiment to see if OAuth2 would function with Twitter. It does not.
+
 [Passport](http://passportjs.org/) strategy for authenticating with [Twitter](http://www.twitter.com/)
 using the OAuth 2.0 API.
 
