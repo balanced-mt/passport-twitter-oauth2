@@ -39,7 +39,7 @@ Twitter profile.  The `verify` callback must call `cb` providing a user to
 complete authentication.
 
 ```js
-passport.use(new FacebookStrategy({
+passport.use(new TwitterStrategy({
     clientID: TWITTER_APP_ID,
     clientSecret: TWITTER_APP_SECRET,
     callbackURL: "http://localhost:3000/auth/twitter/callback"
